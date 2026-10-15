@@ -23,7 +23,7 @@ npm install --save-dev github:UCProjects/ESLint#semver:^1.0.0
 Then in the project's `eslint.config.mjs`:
 
 ```js
-import shared, { commonjs } from 'eslint-config-undercards';
+import shared, { commonjs } from 'eslint-config-ucprojects';
 
 export default [...shared, ...commonjs];
 ```
