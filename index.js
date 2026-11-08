@@ -1,7 +1,33 @@
+import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { FlatCompat } from '@eslint/eslintrc';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
+
+const importPlugin = createRequire(import.meta.url)('eslint-plugin-import');
+
+function withTokenOrComment(sourceCode) {
+  const extra = {
+    getTokenOrCommentBefore: (node) => sourceCode.getTokenBefore(node, { includeComments: true }),
+    getTokenOrCommentAfter: (node) => sourceCode.getTokenAfter(node, { includeComments: true }),
+  };
+  return new Proxy(sourceCode, {
+    get(target, property) {
+      if (property in extra && !(property in target)) return extra[property];
+      const value = Reflect.get(target, property, target);
+      return typeof value === 'function' ? value.bind(target) : value;
+    },
+  });
+}
+
+const { create: createOrder } = importPlugin.rules.order;
+importPlugin.rules.order.create = (context) => {
+  const sourceCode = withTokenOrComment(context.sourceCode ?? context.getSourceCode());
+  return createOrder(Object.create(context, {
+    sourceCode: { value: sourceCode },
+    getSourceCode: { value: () => sourceCode },
+  }));
+};
 
 const compat = new FlatCompat({
   baseDirectory: fileURLToPath(new URL('.', import.meta.url)),
